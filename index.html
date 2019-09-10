@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>jps-search-api-example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="css/main.css" />
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="search-box">
+        <!-- inputにキーワードをバインド -->
+        <input v-model="keyword" />
+        <!-- ボタンを押すと検索実行。検索結果はresultに入る -->
+        <button v-on:click="search(0)">Search</button>
+      </div>
+      <!-- 検索結果がある時のみ表示 -->
+      <div v-if="result">
+        <div>
+          <!-- ヒット件数 -->
+          <span>{{ result.hit }}件</span>
+          <!-- 表示ページ。fromから指定したsizeの件数応答する -->
+          <span>（{{ result.from + 1 }}から{{ result.from + size }}件目）</span>
+          <!-- 次のsize件を表示する -->
+          <button v-on:click="search(result.from+size)">
+            次のページ
+          </button>
+        </div>
+        <!-- 検索結果の表示数設定 -->
+        <div class="size-selectbox">
+          <select size="1" v-model="size" v-on:change="search(0)">
+            <option v-bind:value="Number(20)" selected>20件表示</option>
+            <option v-bind:value="Number(50)">50件表示</option>
+            <option v-bind:value="Number(100)">100件表示</option>
+          </select>
+        </div>
+        <table>
+          <tr>
+            <th></th>
+            <th>タイトル</th>
+            <th>時間/時代</th>
+            <th>人物/団体</th>
+            <th>場所</th>
+            <th>ライセンス</th>
+            <th>コンテンツ有無</th>
+            <th></th>
+          </tr>
+          <tr v-for="item in result.list">
+            <!-- サムネイル -->
+            <td><img v-bind:src="item.common.thumbnailUrl" height="80px" /></td>
+            <td>
+              <!-- 共通項目：タイトルをURLリンクに -->
+              <a v-bind:href="item.common.linkUrl">{{ item.common.title }}</a>
+            </td>
+            <td>
+              <!-- 共通項目：時間/時代は配列 -->
+              {{ item.common.temporal ? item.common.temporal.join(", ") : "" }}
+            </td>
+            <td>
+              <!-- 共通項目：人物/団体は配列 -->
+              {{
+                item.common.contributor
+                  ? item.common.contributor.join(", ")
+                  : ""
+              }}
+            </td>
+            <td>
+              <!-- 共通項目：場所は配列 -->
+              {{ item.common.location ? item.common.location.join(", ") : "" }}
+            </td>
+            <td>
+              <!-- 共通項目：権利情報 -->
+              <!-- itemの内容はコード値で表現されているので、それを変換する -->
+              {{
+                rightsCode
+                  ? rightsCode.map[item.common.contentsRightsType].value.ja
+                  : ""
+              }}
+            </td>
+            <td>
+              <!-- 共通項目：コンテンツアクセス -->
+              <!-- itemの内容はコード値で表現されているので、それを変換する -->
+              {{
+                accessCode
+                  ? accessCode.map[item.common.contentsAccess].value.ja
+                  : ""
+              }}
+            </td>
+            <td>
+              <!-- アイテムの詳細を表示する -->
+              <button v-on:click="show(item)">詳細</button>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal" v-if="item">
+        <div class="content">
+          <button v-on:click="item=null">閉じる</button>
+          <h1>
+            <a v-bind:href="item.common.linkUrl">{{ item.common.title }}</a>
+          </h1>
+          <h2>データベース</h2>
+          <!-- データベースの情報 -->
+          <dl v-if="database">
+            <dt>{{ database.name.ja }}</dt>
+            <dd>{{ database.description.ja }}</dd>
+          </dl>
+          <h2>組織</h2>
+          <!-- データベースの管理組織 -->
+          <dl v-if="organization">
+            <dt>{{ organization.name.ja }}</dt>
+            <dd>{{ organization.description.ja }}</dd>
+          </dl>
+          <h2>データ詳細</h2>
+          <!-- ラベル定義の中のfieldLabelsは、オリジナルのデータベースの各項目の内容を示す。 -->
+          <table v-if="label">
+            <!-- fieldLabelのpathには、各項目を取得するためのJSONPathが入っている。getValueでこれを取得する。 -->
+            <tr
+              v-for="f in label.fieldLabels"
+              v-if="getValue(item,f.path).length>0"
+            >
+              <th>{{ f.label.ja }}</th>
+              <td>{{ getValue(item, f.path).join(", ") }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- JSの読み込み -->
+    <!-- AxiosはAjax通信のためのライブラリ See https://github.com/axios/axios-->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- VueはUI構築のためのライブラリ See https://jp.vuejs.org/-->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
